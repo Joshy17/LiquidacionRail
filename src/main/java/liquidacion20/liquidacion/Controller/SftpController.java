@@ -14,11 +14,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,7 +93,7 @@ public class SftpController {
         return response.toString();
     }
 
-     private void listarArchivosConFormato(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
+    private void listarArchivosConFormato(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
         SFTPClient sftpClient = null;
 
         try {
@@ -99,23 +101,30 @@ public class SftpController {
             List<RemoteResourceInfo> files = sftpClient.ls(directorio);
             response.append("Archivos en el directorio '").append(directorio).append("':\n");
 
-            //Crear variable para candelarizado por crear fecha
+            // Crear variable para candelarizado por crear fecha
             Pattern pattern = Pattern.compile("\\d{8}\\.txt");
+
+            // Obtener la fecha actual del sistema en el formato ddMMyyyy
+            String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
 
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
                 if (matcher.matches()) {
-                    response.append("Archivo: ").append(fileName).append("\n");
-                    String filePath = directorio + "/" + fileName;
-                    String fileContent = readFileContent(sftpClient, filePath);
-                    if (fileContent != null) {
-                        response.append("Contenido del archivo:\n").append(fileContent).append("\n");
-                        // Convertir el contenido del archivo a JSON
-                        String json = convertirAJson(fileContent);
-                        response.append("JSON generado:\n").append(json).append("\n");
-                    } else {
-                        response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
+                    // Verificar si la fecha en el nombre del archivo coincide con la fecha actual
+                    String fechaArchivo = fileName.substring(0, 8);
+                    if (fechaArchivo.equals(fechaActual)) {
+                        response.append("Archivo: ").append(fileName).append("\n");
+                        String filePath = directorio + "/" + fileName;
+                        String fileContent = readFileContent(sftpClient, filePath);
+                        if (fileContent != null) {
+                            response.append("Contenido del archivo:\n").append(fileContent).append("\n");
+                            // Convertir el contenido del archivo a JSON
+                            String json = convertirAJson(fileContent);
+                            response.append("JSON generado:\n").append(json).append("\n");
+                        } else {
+                            response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
+                        }
                     }
                 }
             }
