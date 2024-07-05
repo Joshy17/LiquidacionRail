@@ -1,10 +1,10 @@
-package Liquidacion.Liquidicacion;
+package liquidacion20.liquidacion;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class LiquidicacionApplicationTests {
+class LiquidacionApplicationTests {
 
 	@Test
 	void contextLoads() {
