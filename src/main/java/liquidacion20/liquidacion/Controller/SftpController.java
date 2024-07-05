@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -269,11 +270,20 @@ public class SftpController {
         Pattern pattern2 = Pattern.compile("03(\\d{2})(\\d{12})");
 
         Matcher matcher = pattern.matcher(fileContent);
-        Matcher matcher2 = pattern2.matcher(fileContent);
-
+        
         String amountTotal = "";
-        if (matcher2.find()) {
-            amountTotal = matcher2.group(2);
+
+        // Leer el archivo línea por línea
+        try (BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                Matcher matcher2 = pattern2.matcher(line);
+                if (matcher2.find()) {
+                    amountTotal = matcher2.group(2); // Capturar el monto total del grupo 2
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         while (matcher.find()) {
