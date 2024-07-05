@@ -266,14 +266,14 @@ public class SftpController {
         Pattern pattern = Pattern.compile(
                 "02(\\d{2})(\\d{16})(\\d{6})(\\d{12})(\\d{10})(\\d{2})(\\d{6})(\\d{4})(\\d{6})(\\d{8})");
 
-        Pattern pattern2 = Pattern.compile("03(\\d{6})(\\d{12})");
+    Pattern pattern2 = Pattern.compile("03(\\d{2})(\\d{6})(\\d{12})");
 
         Matcher matcher = pattern.matcher(fileContent);
         Matcher matcher2 = pattern2.matcher(fileContent);
 
         String amountTotal = "";
         if (matcher2.find()) {
-            amountTotal = matcher2.group(2);
+            amountTotal = matcher2.group(3);
         }
 
         while (matcher.find()) {
