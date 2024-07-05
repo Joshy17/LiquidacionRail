@@ -4,7 +4,6 @@
  */
 package liquidacion20.liquidacion.Controller;
 
-
 import java.io.BufferedReader;
 
 import java.io.IOException;
@@ -35,6 +34,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 /**
  *
  * @author XPC
@@ -92,9 +92,9 @@ public class SftpController {
 
         return response.toString();
     }
-    
-     @PostMapping("/listar-credito")
-        public String listarArchivosCredito() {
+
+    @PostMapping("/listar-credito")
+    public String listarArchivosCredito() {
         SSHClient sshClient = new SSHClient();
         StringBuilder response = new StringBuilder();
 
@@ -138,7 +138,8 @@ public class SftpController {
 
         return response.toString();
     }
-         private void listarArchivosConFormato(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
+
+    private void listarArchivosConFormato(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
         SFTPClient sftpClient = null;
 
         try {
@@ -188,8 +189,7 @@ public class SftpController {
         }
     }
 
-    
-        private void listarArchivosConFormatoCredito(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
+    private void listarArchivosConFormatoCredito(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
         SFTPClient sftpClient = null;
 
         try {
@@ -238,10 +238,11 @@ public class SftpController {
             }
         }
     }
+
     //prueba
-   public static String readFileContent(SFTPClient sftpClient, String filePath) {
+    public static String readFileContent(SFTPClient sftpClient, String filePath) {
         StringBuilder contentBuilder = new StringBuilder();
-        try (RemoteFile remoteFile = sftpClient.open(filePath)) {
+        try ( RemoteFile remoteFile = sftpClient.open(filePath)) {
             InputStream inputStream = remoteFile.new RemoteFileInputStream();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
@@ -257,21 +258,25 @@ public class SftpController {
         }
         return contentBuilder.toString();
     }
-   
-        private static String convertirAJsonCredito(String fileContent) {
+
+    private static String convertirAJsonCredito(String fileContent) {
         StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
 
         // Define el patrón para cada línea del archivo
         Pattern pattern = Pattern.compile(
                 "02(\\d{2})(\\d{16})(\\d{6})(\\d{12})(\\d{10})(\\d{2})(\\d{6})(\\d{4})(\\d{6})(\\d{8})");
-        
-        Pattern pattern2 = Pattern.compile("03(\\d{2})(\\12)");
-        
+
+        Pattern pattern2 = Pattern.compile("03(\\d{6})(\\d{12})");
+
         Matcher matcher = pattern.matcher(fileContent);
-        
         Matcher matcher2 = pattern2.matcher(fileContent);
 
-       while (matcher.find()) {
+        String amountTotal = "";
+        if (matcher2.find()) {
+            amountTotal = matcher2.group(2);
+        }
+
+        while (matcher.find()) {
             String pan = matcher.group(2);
             String authorizationId = matcher.group(3);
             String amount = matcher.group(4);
@@ -281,8 +286,6 @@ public class SftpController {
             String expDate = matcher.group(8);
             String refNumber = matcher.group(9);
             String authorizationId1 = matcher.group(10);
-            
-            String amountTotal = matcher2.group(2);
 
             // Formatear el campo system_sequence_number agregando ceros a la izquierda
             String formattedSequenceNumber = String.format("%06d", Integer.parseInt(sequenceNumber));
@@ -294,14 +297,14 @@ public class SftpController {
             String formattedCreatedAt = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
             // Construir el JSON con los campos requeridos
-            String transaccionJson = "{" +
-                    "\"pan\": \"" + pan + "\"," +
-                    "\"amount\": \"" + amountTotal + "\"," +
-                    "\"created_at\": \"" + formattedCreatedAt + "\"," +
-                    "\"system_sequence_number\": \"" + formattedSequenceNumber + "\"," +
-                    "\"authorization_id\": \"" + authorizationId + "\", " +
-                    "\"traking_reference_number\": \"" + refNumber + "\"" +
-                    "}";
+            String transaccionJson = "{"
+                    + "\"pan\": \"" + pan + "\","
+                    + "\"amount\": \"" + amountTotal + "\","
+                    + "\"created_at\": \"" + formattedCreatedAt + "\","
+                    + "\"system_sequence_number\": \"" + formattedSequenceNumber + "\","
+                    + "\"authorization_id\": \"" + authorizationId + "\", "
+                    + "\"traking_reference_number\": \"" + refNumber + "\""
+                    + "}";
 
             jsonBuilder.append(transaccionJson).append(",\n");
         }
@@ -314,8 +317,8 @@ public class SftpController {
 
         return jsonBuilder.toString();
     }
-        
-         private static String convertirAJson(String fileContent) {
+
+    private static String convertirAJson(String fileContent) {
         StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
 
         // Define el patrón para cada línea del archivo
@@ -324,7 +327,7 @@ public class SftpController {
 
         Matcher matcher = pattern.matcher(fileContent);
 
-       while (matcher.find()) {
+        while (matcher.find()) {
             String pan = matcher.group(2);
             String authorizationId = matcher.group(3);
             String amount = matcher.group(4);
@@ -345,14 +348,14 @@ public class SftpController {
             String formattedCreatedAt = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
             // Construir el JSON con los campos requeridos
-            String transaccionJson = "{" +
-                    "\"pan\": \"" + pan + "\"," +
-                    "\"amount\": \"" + amount + "\"," +
-                    "\"created_at\": \"" + formattedCreatedAt + "\"," +
-                    "\"system_sequence_number\": \"" + formattedSequenceNumber + "\"," +
-                    "\"authorization_id\": \"" + authorizationId + "\", " +
-                    "\"traking_reference_number\": \"" + refNumber + "\"" +
-                    "}";
+            String transaccionJson = "{"
+                    + "\"pan\": \"" + pan + "\","
+                    + "\"amount\": \"" + amount + "\","
+                    + "\"created_at\": \"" + formattedCreatedAt + "\","
+                    + "\"system_sequence_number\": \"" + formattedSequenceNumber + "\","
+                    + "\"authorization_id\": \"" + authorizationId + "\", "
+                    + "\"traking_reference_number\": \"" + refNumber + "\""
+                    + "}";
 
             jsonBuilder.append(transaccionJson).append(",\n");
         }
