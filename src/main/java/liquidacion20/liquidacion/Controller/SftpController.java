@@ -203,7 +203,8 @@ public class SftpController {
 
             // Obtener la fecha actual del sistema en el formato ddMMyyyy
             String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
-
+  
+            
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
