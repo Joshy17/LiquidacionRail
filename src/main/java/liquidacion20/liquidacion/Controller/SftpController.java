@@ -9,7 +9,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -171,8 +174,9 @@ public class SftpController {
                             response.append("JSONs generados:\n");
                             for (String json : jsonList) {
                                 response.append(json).append("\n");
+                                enviarJson(json, response);
                             }
-                            
+
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
@@ -191,6 +195,40 @@ public class SftpController {
                     response.append("Error al cerrar el cliente SFTP: ").append(e.getMessage()).append("\n");
                 }
             }
+        }
+    }
+
+    private void enviarJson(String json, StringBuilder response) {
+        String url = "https://transactionserviceuno-u5bdj7yns-josue19-08s-projects.vercel.app/transaction/settle"; // Reemplaza con tu URL de destino
+
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("POST");
+            con.setRequestProperty("Content-Type", "application/json");
+
+            // Enviar el JSON como cuerpo de la solicitud
+            con.setDoOutput(true);
+            try ( OutputStream os = con.getOutputStream()) {
+                byte[] input = json.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            // Leer la respuesta
+            try ( BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "utf-8"))) {
+                StringBuilder responseBody = new StringBuilder();
+                String responseLine = null;
+                while ((responseLine = br.readLine()) != null) {
+                    responseBody.append(responseLine.trim());
+                }
+                // Agregar la respuesta al StringBuilder de respuesta
+                response.append("Respuesta de la URL ").append(url).append(":\n");
+                response.append("Respuesta: ").append(responseBody.toString()).append("\n");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            response.append("Error al enviar el JSON a la URL ").append(url).append(": ").append(e.getMessage()).append("\n");
         }
     }
 
