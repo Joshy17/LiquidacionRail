@@ -9,10 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -168,15 +165,10 @@ public class SftpController {
                         String filePath = directorio + "/" + fileName;
                         String fileContent = readFileContent(sftpClient, filePath);
                         if (fileContent != null) {
-                            response.append("transactions:[\n").append(fileContent).append("\n");
+                            response.append("Contenido del archivo:\n").append(fileContent).append("\n");
                             // Convertir el contenido del archivo a JSON
-                            List<String> jsonList = convertirAJson(fileContent);
-                            response.append("JSONs generados:\n");
-                            for (String json : jsonList) {
-                                response.append(json).append("\n");
-                                enviarJson(json, response);
-                            }
-
+                            String json = convertirAJson(fileContent);
+                            response.append("JSON generado:\n").append(json).append("\n");
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
@@ -198,40 +190,6 @@ public class SftpController {
         }
     }
 
-    private void enviarJson(String json, StringBuilder response) {
-        String url = "https://transactionserviceuno-u5bdj7yns-josue19-08s-projects.vercel.app/transaction/settle"; // Reemplaza con tu URL de destino
-
-        try {
-            URL obj = new URL(url);
-            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-            con.setRequestMethod("POST");
-            con.setRequestProperty("Content-Type", "application/json");
-
-            // Enviar el JSON como cuerpo de la solicitud
-            con.setDoOutput(true);
-            try ( OutputStream os = con.getOutputStream()) {
-                byte[] input = json.getBytes("utf-8");
-                os.write(input, 0, input.length);
-            }
-
-            // Leer la respuesta
-            try ( BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "utf-8"))) {
-                StringBuilder responseBody = new StringBuilder();
-                String responseLine = null;
-                while ((responseLine = br.readLine()) != null) {
-                    responseBody.append(responseLine.trim());
-                }
-                // Agregar la respuesta al StringBuilder de respuesta
-                response.append("Respuesta de la URL ").append(url).append(":\n");
-                response.append("Respuesta: ").append(responseBody.toString()).append("\n");
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            response.append("Error al enviar el JSON a la URL ").append(url).append(": ").append(e.getMessage()).append("\n");
-        }
-    }
-
     private void listarArchivosConFormatoCredito(SSHClient sshClient, String directorio, StringBuilder response) throws IOException {
         SFTPClient sftpClient = null;
 
@@ -245,7 +203,8 @@ public class SftpController {
 
             // Obtener la fecha actual del sistema en el formato ddMMyyyy
             String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
-
+  
+            
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
@@ -312,11 +271,11 @@ public class SftpController {
         Pattern pattern2 = Pattern.compile("03(\\d{2})(\\d{12})");
 
         Matcher matcher = pattern.matcher(fileContent);
-
+        
         String amountTotal = "";
 
         // Leer el archivo línea por línea
-        try ( BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
+        try (BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 Matcher matcher2 = pattern2.matcher(line);
@@ -370,9 +329,10 @@ public class SftpController {
         return jsonBuilder.toString();
     }
 
-    //http://www.lenguajes.somee.com/api/Autorizacion/actualizar
-    private static List<String> convertirAJson(String fileContent) {
-        List<String> jsonList = new ArrayList<>();
+    
+    
+    private static String convertirAJson(String fileContent) {
+        StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
 
         // Define el patrón para cada línea del archivo
         Pattern pattern = Pattern.compile(
@@ -410,9 +370,15 @@ public class SftpController {
                     + "\"traking_reference_number\": \"" + refNumber + "\""
                     + "}";
 
-            jsonList.add(transaccionJson);
+            jsonBuilder.append(transaccionJson).append(",\n");
         }
 
-        return jsonList;
+        // Eliminar la última coma y agregar el cierre del arreglo JSON
+        if (jsonBuilder.length() > 0) {
+            jsonBuilder.deleteCharAt(jsonBuilder.length() - 2); // Eliminar la última coma y el \n
+        }
+        jsonBuilder.append("]}");
+
+        return jsonBuilder.toString();
     }
 }
