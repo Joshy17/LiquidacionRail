@@ -329,6 +329,7 @@ public class SftpController {
         return jsonBuilder.toString();
     }
 
+    
     private static String convertirAJson(String fileContent) {
         StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
 
