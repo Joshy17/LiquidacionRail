@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 /**
  *
@@ -165,13 +166,17 @@ public class SftpController {
                         String filePath = directorio + "/" + fileName;
                         String fileContent = readFileContent(sftpClient, filePath);
                         if (fileContent != null) {
-                            response.append("Contenido del archivo:\n").append(fileContent).append("\n");
+                            response.append("transactions:[\n").append(fileContent).append("\n");
                             // Convertir el contenido del archivo a JSON
                             List<String> jsonList = convertirAJson(fileContent);
                             response.append("JSONs generados:\n");
                             for (String json : jsonList) {
                                 response.append(json).append("\n");
                             }
+                            enviarJSON(jsonList, "https://accountservicedos-paznrzly9-josue19-08s-projects.vercel.app/transaction/credit", response);
+
+                            // Enviar el JSON al segundo endpoint
+                            enviarJSON(jsonList, "https://accountservicese1-i101vvzy8-josue19-08s-projects.vercel.app/transaction/credit", response);
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
@@ -375,5 +380,15 @@ public class SftpController {
         }
 
         return jsonList;
+    }
+    
+        private void enviarJSON(String json, String endpoint, StringBuilder response) {
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            String jsonResponse = restTemplate.postForObject(endpoint, json, String.class);
+            response.append("Respuesta del endpoint ").append(endpoint).append(":\n").append(jsonResponse).append("\n");
+        } catch (Exception e) {
+            response.append("Error al enviar JSON al endpoint ").append(endpoint).append(": ").append(e.getMessage()).append("\n");
+        }
     }
 }
