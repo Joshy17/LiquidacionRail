@@ -79,6 +79,13 @@ public class SftpController {
             // Llamar al método para listar y leer archivos con el formato específico
             listarArchivosConFormato(sshClient, "/archivossftp", response);
 
+            String url = "http://www.lenguajes.somee.com/api/Autorizacion/actualizar";
+            String responseBody = realizarGET(url);
+            System.out.println("Respuesta de la URL: " + responseBody);
+
+            // Puedes hacer algo con la respuesta si es necesario
+            response.append("Solicitud GET exitosa a la URL. Respuesta: ").append(responseBody).append("\n");
+
         } catch (IOException e) {
             e.printStackTrace();
             response.append("Error durante la conexión o autenticación con el servidor SSH: ").append(e.getMessage()).append("\n");
@@ -91,6 +98,27 @@ public class SftpController {
                 response.append("Error al cerrar la conexión SSH: ").append(e.getMessage()).append("\n");
             }
         }
+
+        return response.toString();
+    }
+
+    private String realizarGET(String url) throws IOException {
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+        con.setRequestMethod("GET");
+
+        int responseCode = con.getResponseCode();
+        System.out.println("Código de respuesta GET: " + responseCode);
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder response = new StringBuilder();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
 
         return response.toString();
     }
