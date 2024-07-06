@@ -167,8 +167,11 @@ public class SftpController {
                         if (fileContent != null) {
                             response.append("Contenido del archivo:\n").append(fileContent).append("\n");
                             // Convertir el contenido del archivo a JSON
-                            String json = convertirAJson(fileContent);
-                            response.append("JSON generado:\n").append(json).append("\n");
+                            List<String> jsonList = convertirAJson(fileContent);
+                            response.append("JSONs generados:\n");
+                            for (String json : jsonList) {
+                                response.append(json).append("\n");
+                            }
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
@@ -203,8 +206,7 @@ public class SftpController {
 
             // Obtener la fecha actual del sistema en el formato ddMMyyyy
             String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
-  
-            
+
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
@@ -271,11 +273,11 @@ public class SftpController {
         Pattern pattern2 = Pattern.compile("03(\\d{2})(\\d{12})");
 
         Matcher matcher = pattern.matcher(fileContent);
-        
+
         String amountTotal = "";
 
         // Leer el archivo línea por línea
-        try (BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
+        try ( BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 Matcher matcher2 = pattern2.matcher(line);
@@ -329,9 +331,9 @@ public class SftpController {
         return jsonBuilder.toString();
     }
 
-    
-    private static String convertirAJson(String fileContent) {
-        StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
+    //http://www.lenguajes.somee.com/api/Autorizacion/actualizar
+    private static List<String> convertirAJson(String fileContent) {
+        List<String> jsonList = new ArrayList<>();
 
         // Define el patrón para cada línea del archivo
         Pattern pattern = Pattern.compile(
@@ -369,15 +371,9 @@ public class SftpController {
                     + "\"traking_reference_number\": \"" + refNumber + "\""
                     + "}";
 
-            jsonBuilder.append(transaccionJson).append(",\n");
+            jsonList.add(transaccionJson);
         }
 
-        // Eliminar la última coma y agregar el cierre del arreglo JSON
-        if (jsonBuilder.length() > 0) {
-            jsonBuilder.deleteCharAt(jsonBuilder.length() - 2); // Eliminar la última coma y el \n
-        }
-        jsonBuilder.append("]}");
-
-        return jsonBuilder.toString();
+        return jsonList;
     }
 }
