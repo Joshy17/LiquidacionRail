@@ -44,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/liquidaciones")
 public class SftpController {
 
-    // Detalles del servidor
     String hostname = "s-049c1379e80b490c8.server.transfer.us-east-2.amazonaws.com";
     String username = "usuarioAcceso";
 
@@ -58,24 +57,20 @@ public class SftpController {
             sshClient.connect(hostname);
             System.out.println("Conexión establecida con el servidor: " + hostname);
 
-            // Cargar la clave privada desde los recursos
             InputStream inputStream = getClass().getResourceAsStream("/id_rsa.txt");
             if (inputStream == null) {
                 throw new RuntimeException("No se pudo encontrar el archivo de clave privada.");
             }
 
-            // Crear un archivo temporal para la clave privada
             Path tempKeyPath = Files.createTempFile("id_rsa", ".txt");
             Files.copy(inputStream, tempKeyPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Configurar SSHJ con la clave privada
             KeyProvider keyProvider = sshClient.loadKeys(tempKeyPath.toString());
             sshClient.authPublickey(username, keyProvider);
             System.out.println("Autenticación exitosa para el usuario: " + username);
 
             response.append("Conexión SSH establecida y autenticación realizada correctamente.\n");
 
-            // Llamar al método para listar y leer archivos con el formato específico
             listarArchivosConFormato(sshClient, "/archivossftp", response);
 
         } catch (IOException e) {
@@ -104,24 +99,20 @@ public class SftpController {
             sshClient.connect(hostname);
             System.out.println("Conexión establecida con el servidor: " + hostname);
 
-            // Cargar la clave privada desde los recursos
             InputStream inputStream = getClass().getResourceAsStream("/id_rsa.txt");
             if (inputStream == null) {
                 throw new RuntimeException("No se pudo encontrar el archivo de clave privada.");
             }
 
-            // Crear un archivo temporal para la clave privada
             Path tempKeyPath = Files.createTempFile("id_rsa", ".txt");
             Files.copy(inputStream, tempKeyPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Configurar SSHJ con la clave privada
             KeyProvider keyProvider = sshClient.loadKeys(tempKeyPath.toString());
             sshClient.authPublickey(username, keyProvider);
             System.out.println("Autenticación exitosa para el usuario: " + username);
 
             response.append("Conexión SSH establecida y autenticación realizada correctamente.\n");
 
-            // Llamar al método para listar y leer archivos con el formato específico
             listarArchivosConFormatoCredito(sshClient, "/archivossftp", response);
 
         } catch (IOException e) {
@@ -148,17 +139,13 @@ public class SftpController {
             List<RemoteResourceInfo> files = sftpClient.ls(directorio);
             response.append("Archivos en el directorio '").append(directorio).append("':\n");
 
-            // Crear variable para candelarizado por crear fecha
             Pattern pattern = Pattern.compile("\\d{8}\\.txt");
-
-            // Obtener la fecha actual del sistema en el formato ddMMyyyy
             String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
 
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
                 if (matcher.matches()) {
-                    // Verificar si la fecha en el nombre del archivo coincide con la fecha actual
                     String fechaArchivo = fileName.substring(0, 8);
                     if (fechaArchivo.equals(fechaActual)) {
                         response.append("Archivo: ").append(fileName).append("\n");
@@ -166,7 +153,6 @@ public class SftpController {
                         String fileContent = readFileContent(sftpClient, filePath);
                         if (fileContent != null) {
                             response.append("Contenido del archivo:\n").append(fileContent).append("\n");
-                            // Convertir el contenido del archivo a JSON
                             List<String> jsonList = convertirAJson(fileContent);
                             response.append("JSONs generados:\n");
                             for (String json : jsonList) {
@@ -201,17 +187,13 @@ public class SftpController {
             List<RemoteResourceInfo> files = sftpClient.ls(directorio);
             response.append("Archivos en el directorio '").append(directorio).append("':\n");
 
-            // Crear variable para candelarizado por crear fecha
             Pattern pattern = Pattern.compile("\\d{8}\\.txt");
-
-            // Obtener la fecha actual del sistema en el formato ddMMyyyy
             String fechaActual = new SimpleDateFormat("ddMMyyyy").format(new Date());
 
             for (RemoteResourceInfo file : files) {
                 String fileName = file.getName();
                 Matcher matcher = pattern.matcher(fileName);
                 if (matcher.matches()) {
-                    // Verificar si la fecha en el nombre del archivo coincide con la fecha actual
                     String fechaArchivo = fileName.substring(0, 8);
                     if (fechaArchivo.equals(fechaActual)) {
                         response.append("Archivo: ").append(fileName).append("\n");
@@ -219,9 +201,15 @@ public class SftpController {
                         String fileContent = readFileContent(sftpClient, filePath);
                         if (fileContent != null) {
                             response.append("Contenido del archivo:\n").append(fileContent).append("\n");
-                            // Convertir el contenido del archivo a JSON
                             String json = convertirAJsonCredito(fileContent);
                             response.append("JSON generado:\n").append(json).append("\n");
+                            // Generar JSON con solo el campo pan y agregarlo a la respuesta
+                            List<String> pans = extractAllPansFromJson(json);
+                            List<String> jsonPans = convertirAJsonSoloPans(pans);
+                            response.append("JSON Pan generados:\n");
+                            for (String jsonPan : jsonPans) {
+                                response.append(jsonPan).append("\n");
+                            }
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
@@ -243,137 +231,77 @@ public class SftpController {
         }
     }
 
-    //prueba
-    public static String readFileContent(SFTPClient sftpClient, String filePath) {
+    private static String readFileContent(SFTPClient sftpClient, String filePath) {
         StringBuilder contentBuilder = new StringBuilder();
         try ( RemoteFile remoteFile = sftpClient.open(filePath)) {
             InputStream inputStream = remoteFile.new RemoteFileInputStream();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 contentBuilder.append(line).append("\n");
             }
-
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Error al leer el contenido del archivo: " + filePath);
             return null;
         }
         return contentBuilder.toString();
     }
 
-    private static String convertirAJsonCredito(String fileContent) {
-        StringBuilder jsonBuilder = new StringBuilder("{ \"transactions\": [");
-
-        // Define el patrón para cada línea del archivo
-        Pattern pattern = Pattern.compile(
-                "02(\\d{2})(\\d{16})(\\d{6})(\\d{12})(\\d{10})(\\d{2})(\\d{6})(\\d{4})(\\d{6})(\\d{8})");
-
-        Pattern pattern2 = Pattern.compile("03(\\d{2})(\\d{12})");
-
-        Matcher matcher = pattern.matcher(fileContent);
-
-        String amountTotal = "";
-
-        // Leer el archivo línea por línea
-        try ( BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
-            String line;
+    private List<String> convertirAJson(String fileContent) {
+        List<String> jsonList = new ArrayList<>();
+        BufferedReader reader = new BufferedReader(new StringReader(fileContent));
+        String line;
+        try {
             while ((line = reader.readLine()) != null) {
-                Matcher matcher2 = pattern2.matcher(line);
-                if (matcher2.find()) {
-                    amountTotal = matcher2.group(2); // Capturar el monto total del grupo 2
-                }
+                // Procesa cada línea del contenido del archivo y conviértela a JSON
+                String json = convertirLineaAJson(line);
+                jsonList.add(json);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
-        while (matcher.find()) {
-            String pan = matcher.group(2);
-            String authorizationId = matcher.group(3);
-            String amount = matcher.group(4);
-            String date = matcher.group(5);
-            String sequenceNumber = matcher.group(6);
-            String time = matcher.group(7);
-            String expDate = matcher.group(8);
-            String refNumber = matcher.group(9);
-            String authorizationId1 = matcher.group(10);
-
-            // Formatear el campo system_sequence_number agregando ceros a la izquierda
-            String formattedSequenceNumber = String.format("%06d", Integer.parseInt(sequenceNumber));
-
-            // Formatear el campo created_at a "yyyy-MM-dd HH:mm:ss"
-            LocalDateTime dateTime = LocalDateTime.of(
-                    LocalDate.parse(date.substring(0, 6), DateTimeFormatter.ofPattern("ddMMyy")),
-                    LocalTime.parse(time, DateTimeFormatter.ofPattern("HHmmss")));
-            String formattedCreatedAt = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-            // Construir el JSON con los campos requeridos
-            String transaccionJson = "{"
-                    + "\"pan\": \"" + pan + "\","
-                    + "\"amount\": \"" + amountTotal + "\","
-                    + "\"created_at\": \"" + formattedCreatedAt + "\","
-                    + "\"system_sequence_number\": \"" + formattedSequenceNumber + "\","
-                    + "\"authorization_id\": \"" + authorizationId + "\", "
-                    + "\"traking_reference_number\": \"" + refNumber + "\""
-                    + "}";
-
-            jsonBuilder.append(transaccionJson).append(",\n");
-        }
-
-        // Eliminar la última coma y agregar el cierre del arreglo JSON
-        if (jsonBuilder.length() > 0) {
-            jsonBuilder.deleteCharAt(jsonBuilder.length() - 2); // Eliminar la última coma y el \n
-        }
-        jsonBuilder.append("]}");
-
-        return jsonBuilder.toString();
+        return jsonList;
     }
 
-    //http://www.lenguajes.somee.com/api/Autorizacion/actualizar
-    private static List<String> convertirAJson(String fileContent) {
-        List<String> jsonList = new ArrayList<>();
+    private String convertirLineaAJson(String line) {
+        // Ejemplo básico de conversión, ajusta según tu formato de línea y requisitos de JSON
+        return "{\"line\":\"" + line + "\"}";
+    }
 
-        // Define el patrón para cada línea del archivo
-        Pattern pattern = Pattern.compile(
-                "02(\\d{2})(\\d{16})(\\d{6})(\\d{12})(\\d{10})(\\d{2})(\\d{6})(\\d{4})(\\d{6})(\\d{8})");
+    private String convertirAJsonCredito(String fileContent) {
+        // Ejemplo básico de conversión, ajusta según tu formato de contenido de archivo y requisitos de JSON
+        return "{\"fileContent\":\"" + fileContent.replace("\n", "\\n") + "\"}";
+    }
 
-        Matcher matcher = pattern.matcher(fileContent);
-
-        while (matcher.find()) {
-            String pan = matcher.group(2);
-            String authorizationId = matcher.group(3);
-            String amount = matcher.group(4);
-            String date = matcher.group(5);
-            String sequenceNumber = matcher.group(6);
-            String time = matcher.group(7);
-            String expDate = matcher.group(8);
-            String refNumber = matcher.group(9);
-            String authorizationId1 = matcher.group(10);
-
-            // Formatear el campo system_sequence_number agregando ceros a la izquierda
-            String formattedSequenceNumber = String.format("%06d", Integer.parseInt(sequenceNumber));
-
-            // Formatear el campo created_at a "yyyy-MM-dd HH:mm:ss"
-            LocalDateTime dateTime = LocalDateTime.of(
-                    LocalDate.parse(date.substring(0, 6), DateTimeFormatter.ofPattern("ddMMyy")),
-                    LocalTime.parse(time, DateTimeFormatter.ofPattern("HHmmss")));
-            String formattedCreatedAt = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-            // Construir el JSON con los campos requeridos
-            String transaccionJson = "{"
-                    + "\"pan\": \"" + pan + "\","
-                    + "\"amount\": \"" + amount + "\","
-                    + "\"created_at\": \"" + formattedCreatedAt + "\","
-                    + "\"system_sequence_number\": \"" + formattedSequenceNumber + "\","
-                    + "\"authorization_id\": \"" + authorizationId + "\", "
-                    + "\"traking_reference_number\": \"" + refNumber + "\""
-                    + "}";
-
-            jsonList.add(transaccionJson);
+    private List<String> extractAllPansFromJson(String json) {
+        List<String> pans = new ArrayList<>();
+        Pattern pattern = Pattern.compile("\"fileContent\":\"(.*?)\"");
+        Matcher matcher = pattern.matcher(json);
+        if (matcher.find()) {
+            String fileContent = matcher.group(1);  // Obtén el contenido del archivo
+            BufferedReader reader = new BufferedReader(new StringReader(fileContent));
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    // Supongamos que el PAN está en la primera posición de la línea, ajusta según sea necesario
+                    String[] parts = line.split(" ");
+                    if (parts.length > 0) {
+                        pans.add(parts[0]);  // Agrega el PAN a la lista
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+        return pans;
+    }
 
+    private List<String> convertirAJsonSoloPans(List<String> pans) {
+        List<String> jsonList = new ArrayList<>();
+        for (String pan : pans) {
+            jsonList.add("{\"pan\":\"" + pan + "\"}");
+        }
         return jsonList;
+
     }
 }
