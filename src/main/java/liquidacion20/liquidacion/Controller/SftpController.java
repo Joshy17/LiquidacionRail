@@ -196,7 +196,6 @@ public class SftpController {
         try {
             sftpClient = sshClient.newSFTPClient();
             List<RemoteResourceInfo> files = sftpClient.ls(directorio);
-            response.append("Archivos en el directorio '").append(directorio).append("':\n");
 
             // Crear variable para candelarizado por crear fecha
             Pattern pattern = Pattern.compile("\\d{8}\\.txt");
@@ -212,14 +211,12 @@ public class SftpController {
                     // Verificar si la fecha en el nombre del archivo coincide con la fecha actual
                     String fechaArchivo = fileName.substring(0, 8);
                     if (fechaArchivo.equals(fechaActual)) {
-                        response.append("Archivo: ").append(fileName).append("\n");
                         String filePath = directorio + "/" + fileName;
                         String fileContent = readFileContent(sftpClient, filePath);
                         if (fileContent != null) {
-                            response.append("Contenido del archivo:\n").append(fileContent).append("\n");
                             // Convertir el contenido del archivo a JSON
                             String json = convertirAJsonCredito(fileContent);
-                            response.append("JSON generado:\n").append(json).append("\n");
+                            response.append(json);
                         } else {
                             response.append("Error al leer el contenido del archivo: ").append(fileName).append("\n");
                         }
